@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>DominaReceita Médica — Demo navegável</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: { colors: { primary: '#0B6E99', accent: '#E8C547' } } } };
+</script>
+<style>
+  body{font-family:'Inter',system-ui,-apple-system,sans-serif;}
+  .page{display:none;}
+  .page.active{display:block;}
+  .nav-item.active{background:#0B6E99;color:#fff;}
+</style>
+</head>
+<body class="bg-slate-100">
+<div class="min-h-screen flex">
+  <!-- SIDEBAR -->
+  <aside class="w-64 bg-slate-900 text-white flex flex-col">
+    <div class="p-6 border-b border-slate-800">
+      <div class="font-bold text-lg">DominaReceita</div>
+      <div class="text-xs text-slate-400">Dra. Ana Luiza Martins</div>
+      <div class="text-xs text-amber-400 mt-1">DEMO · Clínica Pele &amp; Vida</div>
+    </div>
+    <nav id="nav" class="flex-1 p-3 space-y-1 text-sm"></nav>
+    <div class="m-3 text-xs text-slate-500">
+      Este é um preview estático. Dados são simulados.
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 overflow-x-hidden">
+    <div id="pages" class="p-8 max-w-6xl mx-auto"></div>
+  </main>
+</div>
+
+<script>
+const NAV = [
+  { id:'overview', label:'Visão geral', icon:'📊' },
+  { id:'diagnostico', label:'Diagnóstico IA', icon:'🔎' },
+  { id:'briefing', label:'Briefing & Site', icon:'🧩' },
+  { id:'plano', label:'Plano 90 dias', icon:'🗺️' },
+  { id:'crm', label:'CRM', icon:'👥' },
+  { id:'campanhas', label:'Tráfego & ADS', icon:'🚀' },
+  { id:'seo', label:'SEO & Conteúdo', icon:'📝' },
+  { id:'followups', label:'Follow-ups', icon:'⏱️' },
+  { id:'vendas', label:'Vendas', icon:'💬' },
+  { id:'avaliacoes', label:'Avaliações', icon:'⭐' },
+  { id:'posvenda', label:'Pós-venda', icon:'🔄' },
+  { id:'indicacoes', label:'Indicações', icon:'🎁' },
+];
+
+// render nav
+const navEl = document.getElementById('nav');
+NAV.forEach((n, i) => {
+  const a = document.createElement('a');
+  a.className = 'nav-item flex items-center gap-2 rounded-lg px-3 py-2 cursor-pointer hover:bg-slate-800';
+  a.dataset.page = n.id;
+  a.innerHTML = `<span>${n.icon}</span>${n.label}`;
+  a.onclick = () => show(n.id);
+  navEl.appendChild(a);
+});
+
+function show(id) {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === id));
+  document.querySelectorAll('.page').forEach(el => el.classList.toggle('active', el.id === 'page-' + id));
+}
+
+const PAGES = document.getElementById('pages');
+function page(id, html) {
+  const d = document.createElement('div');
+  d.id = 'page-' + id;
+  d.className = 'page';
+  d.innerHTML = html;
+  PAGES.appendChild(d);
+}
+
+// ---------- OVERVIEW ----------
+page('overview', `
+<header class="mb-6">
+  <h1 class="text-3xl font-bold">Visão geral</h1>
+  <p class="text-slate-500">Últimos 30 dias · Clínica Pele & Vida</p>
+</header>
+<section class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+  ${[
+    ['Investido em ADS','R$ 9.830','+18%'],
+    ['Leads gerados','142','+32%'],
+    ['Agendamentos','48','+41%'],
+    ['Faturamento','R$ 78.400','+62%'],
+  ].map(([l,v,d]) => `
+    <div class="bg-white rounded-xl border p-5">
+      <div class="text-xs text-slate-500">${l}</div>
+      <div class="text-2xl font-bold mt-1">${v}</div>
+      <div class="text-xs text-green-700 mt-1">${d} vs mês anterior</div>
+    </div>`).join('')}
+</section>
+<section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  <div class="bg-white rounded-xl border p-6">
+    <h2 class="font-semibold mb-3">Funil de conversão</h2>
+    ${[
+      ['Leads',142,'#0B6E99'],
+      ['Qualificados',96,'#3B82F6'],
+      ['Agendados',48,'#10B981'],
+      ['Compareceram',38,'#F59E0B'],
+      ['Fechados',27,'#E8C547'],
+    ].map(([l,v,c]) => `
+      <div class="mb-2">
+        <div class="flex justify-between text-sm"><span>${l}</span><strong>${v}</strong></div>
+        <div class="h-2 bg-slate-100 rounded"><div style="width:${v/142*100}%;background:${c}" class="h-full rounded"></div></div>
+      </div>`).join('')}
+  </div>
+  <div class="bg-white rounded-xl border p-6">
+    <h2 class="font-semibold mb-3">ROAS por canal</h2>
+    ${[
+      ['Meta Ads',4.2,'#1877F2'],
+      ['Google Ads',6.8,'#EA4335'],
+      ['Orgânico / SEO',12.4,'#10B981'],
+      ['Indicação',Infinity,'#E8C547'],
+    ].map(([l,v,c]) => `
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-28 text-sm">${l}</div>
+        <div class="flex-1 h-6 bg-slate-100 rounded">
+          <div style="width:${Math.min(v*8,100)}%;background:${c}" class="h-full rounded flex items-center px-2 text-xs text-white font-bold">${v === Infinity ? '∞' : v+'x'}</div>
+        </div>
+      </div>`).join('')}
+  </div>
+</section>
+`);
+
+// ---------- DIAGNÓSTICO ----------
+page('diagnostico', `
+<header class="mb-6">
+  <h1 class="text-3xl font-bold">Diagnóstico IA de concorrentes</h1>
+  <p class="text-slate-500">Análise gerada por IA baseada em especialidade + cidade.</p>
+</header>
+<div class="bg-gradient-to-br from-primary to-slate-900 text-white rounded-2xl p-8 mb-6">
+  <div class="text-sm opacity-80">Score de competitividade do seu nicho</div>
+  <div class="text-6xl font-bold mt-2">72<span class="text-2xl opacity-70">/100</span></div>
+  <p class="mt-3 max-w-xl opacity-90">Dermatologia estética em Florianópolis é um mercado moderadamente competitivo. Os top 3 concorrentes dominam ~58% do tráfego orgânico, mas há lacunas claras em SEO local e conteúdo em vídeo.</p>
+</div>
+<section class="bg-white rounded-xl border p-6 mb-6">
+  <h2 class="font-semibold mb-4">Top 3 concorrentes identificados</h2>
+  ${[
+    ['Dermato Blue','@dermatoblue.fln','32K seguidores','Forte em Instagram. Fraca em Google.'],
+    ['Dra. Clara Derm','@draclaraderm','18K seguidores','Bom SEO. Ruim em ADS.'],
+    ['Clínica Renovare','@renovare.est','24K seguidores','Forte em ADS. Sem blog.'],
+  ].map(([n,ig,f,o]) => `
+    <div class="border-t py-3">
+      <div class="flex justify-between">
+        <div><strong>${n}</strong> <span class="text-slate-500 text-xs">${ig}</span></div>
+        <div class="text-sm text-slate-500">${f}</div>
+      </div>
+      <div class="text-sm text-slate-700 mt-1">${o}</div>
+    </div>`).join('')}
+</section>
+<section class="bg-white rounded-xl border p-6">
+  <h2 class="font-semibold mb-3">Plano de ataque sugerido</h2>
+  <ol class="list-decimal pl-5 space-y-2 text-sm">
+    <li>Dominar buscas locais "harmonização facial Florianópolis" e "melasma centro Floripa" — concorrentes ignoram SEO local.</li>
+    <li>Criar 8 reels/mês de "mitos e verdades" sobre Botox — formato com maior engajamento no nicho.</li>
+    <li>Investir R$ 3.500/mês em Meta Ads com campanha de "agendamento direto" — ROAS projetado de 4-6x.</li>
+    <li>Implementar programa "Indique e Ganhe" — concorrentes não têm nenhum.</li>
+    <li>Otimizar ficha Google Business Profile — score atual 62/100, potencial de +40% de cliques.</li>
+  </ol>
+</section>
+`);
+
+// ---------- BRIEFING & SITE ----------
+page('briefing', `
+<header class="mb-6">
+  <h1 class="text-3xl font-bold">Briefing & Site gerado</h1>
+  <p class="text-slate-500">47 campos que alimentam a IA e viram um site pronto.</p>
+</header>
+<section class="bg-white rounded-xl border p-6 mb-6">
+  <h2 class="font-semibold mb-3">Briefing atual</h2>
+  <div class="grid grid-cols-2 gap-3 text-sm">
+    ${[
+      ['Médico','Dra. Ana Luiza Martins'],
+      ['CRM','CRM/SC 18.472'],
+      ['Clínica','Clínica Pele & Vida'],
+      ['Especialidade','Dermatologia Estética'],
+      ['Cidade','Florianópolis, Centro'],
+      ['Tom de voz','Profissional + acolhedor'],
+      ['Meta 90d','R$ 240.000'],
+      ['Público','Mulheres 25-55, classe A/B'],
+    ].map(([k,v]) => `<div class="flex justify-between border-b pb-2"><span class="text-slate-500">${k}</span><span class="font-medium">${v}</span></div>`).join('')}
+  </div>
+</section>
+<section class="bg-white rounded-xl border p-6">
+  <div class="flex justify-between items-center mb-3">
+    <h2 class="font-semibold">Site gerado</h2>
+    <div class="flex gap-2">
+      <button class="rounded-lg border px-3 py-1 text-sm">Preview</button>
+      <button class="rounded-lg border px-3 py-1 text-sm">Publicar</button>
+      <button class="rounded-lg border px-3 py-1 text-sm">ZIP</button>
+    </div>
+  </div>
+  <div class="aspect-video bg-slate-100 rounded-lg flex items-center justify-center border">
+    <div class="text-center">
+      <div class="text-4xl mb-3">🌐</div>
+      <div class="font-semibold">peleevida-floripa.dominareceita.com</div>
+      <div class="text-xs text-slate-500 mt-2">Status: Publicado · Gerado há 2h</div>
+      <a href="./demo-site-clinica.html" target="_blank" class="inline-block mt-4 rounded-lg bg-primary text-white px-4 py-2 text-sm">Ver site demo (arquivo separado) ↗</a>
+    </div>
+  </div>
+</section>
+`);
+
+// ---------- PLANO ----------
+page('plano', `
+<header class="mb-6">
+  <h1 class="text-3xl font-bold">Plano de 90 dias</h1>
+  <p class="text-slate-500">Roadmap gerado por IA com base no seu briefing e diagnóstico.</p>
+</header>
+<section class="bg-white rounded-xl border p-6 mb-6">
+  <h2 class="font-semibold text-lg">Plano "Faturar R$ 240k em 90 dias"</h2>
+  <p class="text-sm text-slate-500 mb-4">Orçamento sugerido: <strong>R$ 12.000</strong></p>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <div>
+      <h3 class="font-medium mb-2">KPIs projetados</h3>
+      <ul class="text-sm space-y-1">
+        <li>Leads: <strong>300</strong></li>
+        <li>Agendamentos: <strong>120</strong></li>
+        <li>Pacientes fechados: <strong>84</strong></li>
+        <li>Ticket médio: <strong>R$ 2.850</strong></li>
+        <li>ROAS esperado: <strong>8.4x</strong></li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="font-medium mb-2">Foco estratégico</h3>
+      <ul class="list-disc pl-5 text-sm space-y-1">
+        <li>Ativar Meta Ads + Google Ads imediatamente</li>
+        <li>Publicar 12 artigos SEO sobre procedimentos-chave</li>
+        <li>Programa "Indique e Ganhe" com cashback R$ 150</li>
+      </ul>
+    </div>
+  </div>
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-left text-slate-500 border-b">
+        <th class="p-2">Semana</th><th class="p-2">Foco</th><th class="p-2">Tarefas-chave</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${[
+        ['S1-S2','Fundação','Site no ar · Google Business otimizado · Meta Pixel instalado · CRM ativo'],
+        ['S3-S4','Tração','Lançar Meta Ads (R$ 120/dia) · Primeira sequência de follow-up · Captar 80 leads'],
+        ['S5-S6','Escala','Google Ads keywords-chave · Publicar 4 artigos SEO · Ajustar criativos que performam'],
+        ['S7-S8','Otimização','Analisar ROAS por canal · Cortar campanhas ruins · Dobrar investimento nas boas'],
+        ['S9-S10','Retenção','Ativar pós-venda 6m · Enviar NPS · Primeiros candidatos a pacote anual'],
+        ['S11-S13','Recorrência','Programa Indique-e-Ganhe · Relatório de ROI · Planejar próximo trimestre'],
+      ].map(([s,f,t]) => `<tr class="border-b"><td class="p-2 font-medium">${s}</td><td class="p-2">${f}</td><td class="p-2 text-slate-600">${t}</td></tr>`).join('')}
+    </tbody>
+  </table>
+</section>
+`);
+
+// ---------- CRM ----------
+page('crm', `
+<header class="mb-6 flex justify-between items-center">
+  <div>
+    <h1 class="text-3xl font-bold">CRM — Funil de Leads</h1>
+    <p class="text-slate-500">Arraste para mover ou use o botão "Avançar".</p>
+  </div>
+  <button class="rounded-lg bg-primary text-white px-4 py-2 text-sm">+ Novo lead</button>
+</header>
+<section class="grid grid-cols-5 gap-3">
+  ${[
+    ['NOVO',['Maria Silva · Botox','João Souza · Harmonização','Paula M. · Consulta'],'bg-slate-100'],
+    ['QUALIFICADO',['Carla Dias · Laser','Roberto F. · Preenchimento'],'bg-blue-50'],
+    ['AGENDADO',['Ana Costa · 22/04 · Consulta','Fernanda L. · 24/04 · Botox'],'bg-amber-50'],
+    ['COMPARECEU',['Juliana R. · Preenchimento'],'bg-green-50'],
+    ['RECORRENTE',['Patrícia T. · 3ª consulta'],'bg-purple-50'],
+  ].map(([st,ls,bg]) => `
+    <div class="${bg} rounded-xl p-3">
+      <div class="font-semibold text-xs text-slate-600 uppercase mb-2">${st}</div>
+      ${ls.map(l => `<div class="bg-white rounded-lg p-3 text-sm mb-2 shadow-sm">${l}</div>`).join('')}
+    </div>`).join('')}
+</section>
+`);
+
+// ---------- CAMPANHAS ----------
+page('campanhas', `
+<header class="mb-6 flex justify-between items-center">
+  <div>
+    <h1 class="text-3xl font-bold">Tráfego & ADS</h1>
+    <p class="text-slate-500">Meta + Google integrados. Publicação em 1 clique.</p>
+  </div>
+  <button class="rounded-lg bg-primary text-white px-4 py-2 text-sm">+ Nova campanha</button>
+</header>
+<section class="bg-white rounded-xl border overflow-hidden">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="bg-slate-50 text-left text-slate-500">
+        <th class="p-3">Campanha</th><th class="p-3">Canal</th><th class="p-3">Orçamento/dia</th>
+        <th class="p-3">Gasto</th><th class="p-3">Leads</th><th class="p-3">ROAS</th><th class="p-3">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${[
+        ['Botox - Mulheres 30+','Meta','R$ 120','R$ 2.840','42','4.8x','ACTIVE','text-green-700'],
+        ['Harmonização Facial','Google','R$ 80','R$ 1.920','28','6.2x','ACTIVE','text-green-700'],
+        ['Remarketing visitantes','Meta','R$ 40','R$ 960','18','3.1x','ACTIVE','text-green-700'],
+        ['Laser CO2 - Buscas','Google','R$ 100','R$ 1.400','12','2.1x','PAUSED','text-amber-700'],
+        ['Peeling - Stories','Meta','R$ 50','R$ 0','0','—','DRAFT','text-slate-500'],
+      ].map(([n,c,o,g,l,r,s,color]) => `
+        <tr class="border-t">
+          <td class="p-3 font-medium">${n}</td><td class="p-3">${c}</td><td class="p-3">${o}</td>
+          <td class="p-3">${g}</td><td class="p-3">${l}</td><td class="p-3 font-semibold">${r}</td>
+          <td class="p-3 ${color}">${s}</td>
+        </tr>`).join('')}
+    </tbody>
+  </table>
+</section>
+`);
+
+// ---------- SEO ----------
+page('seo', `
+<header class="mb-6">
+  <h1 class="text-3xl font-bold">SEO & Conteúdo</h1>
+  <p class="text-slate-500">Auditoria automática + palavras-chave + artigos gerados com IA.</p>
+</header>
+<section class="bg-white rounded-xl border p-6 mb-6">
+  <h2 class="font-semibold mb-3">Auditoria · peleevida.com.br</h2>
+  <div class="flex items-center gap-3 mb-4">
+    <div class="h-3 w-40 bg-slate-200 rounded-full overflow-hidden"><div class="h-full bg-green-500" style="width:72%"></div></div>
+    <strong>Score: 72/100</strong>
+  </div>
+  <ul class="text-sm space-y-1">
+    <li class="text-green-700">✓ Title tag otimizada</li>
+    <li class="text-green-700">✓ Meta description presente</li>
+    <li class="text-green-700">✓ HTTPS ativo</li>
+    <li class="text-green-700">✓ Schema.org MedicalBusiness</li>
+    <li class="text-red-700">✗ Velocidade mobile (4.2s) <span class="text-slate-500">— otimizar imagens</span></li>
+    <li class="text-red-700">✗ Sem sitemap.xml <span class="text-slate-500">— gerar e submeter ao GSC</span></li>
+    <li class="text-red-700">✗ Poucos backlinks (3) <span class="text-slate-500">— partnerships com blogs locais</span></li>
+  </ul>
+</section>
+<section class="bg-white rounded-xl border p-6">
+  <h2 class="font-semibold mb-3">Palavras-chave sugeridas</h2>
+  <table class="w-full text-sm">
+    <thead><tr class="text-left text-slate-500"><th class="p-2">Palavra-chave</th><th class="p-2">Volume</th><th class="p-2">CPC</th><th></th></tr></thead>
+    <tbody>
+      ${[
+        ['harmonização facial florianópolis',1900,6.40],
+        ['botox floripa preço',1300,4.80],
+        ['dermatologista centro floripa',890,5.10],
+        ['preenchimento labial são josé',720,7.20],
+        ['melasma tratamento florianópolis',540,3.90],
+      ].map(([k,v,c]) => `
+        <tr class="border-t"><td class="p-2">${k}</td><td class="p-2">${v}</td><td class="p-2">R$ ${c.toFixed(2)}</td>
+        <td class="p-2"><button class="text-xs border rounded px-2 py-1">Gerar artigo</button></td></tr>`).join('')}
+    </tbody>
+  </table>
+</section>
+`);
+
+// ---------- FOLLOW-UPS ----------
+page('followups', `
+<header class="mb-6">
+  <h1 class="text-3xl font-bold">Follow-ups automáticos</h1>
+  <p class="text-slate-500">Sequência D0 / D2 / D5 / D10 via WhatsApp. 7 templates prontos.</p>
+</header>
+<section class="bg-white rounded-xl border p-6 mb-6">
+  <h2 class="font-semibold mb-3">Templates ativos</h2>
+  <table class="w-full text-sm">
+    <thead><tr class="text-left text-slate-500"><th class="p-2">Código</th><th class="p-2">Nome</th><th class="p-2">Canal</th><th class="p-2">Atraso</th><th class="p-2">Status</th></tr></thead>
+    <tbody>
+      ${[
+        ['D0','Boas-vindas','WhatsApp','0 dias','Ativo'],
+        ['D2','Lembrete de valor','WhatsApp','2 dias','Ativo'],
+        ['D5','Prova social','WhatsApp','5 dias','Ativo'],
+        ['D10','Oferta limitada','WhatsApp','10 dias','Ativo'],
+        ['POS_CONSULTA','Pós-consulta (NPS)','WhatsApp','1 dia','Ativo'],
+        ['RETORNO_6M','Retorno 6m','WhatsApp','180 dias','Ativo'],
+        ['RETORNO_12M','Retorno 12m','WhatsApp','365 dias','Ativo'],
+      ].map(([c,n,ch,d,s]) => `<tr class="border-t"><td class="p-2 font-mono">${c}</td><td class="p-2">${n}</td><td class="p-2">${ch}</td><td class="p-2">${d}</td><td class="p-2 text-green-700">${s}</td></tr>`).join('')}
+    </tbody>
+  </table>
+</section>
+<section class="bg-white rounded-xl border p-6">
+  <h2 class="font-semibold mb-3">Fila de envios (próximos)</h2>
+  <table class="w-full text-sm">
+    <thead><tr class="text-left text-slate-500"><th class="p-2">Quando</th><th class="p-2">Lead</th><th class="p-2">Template</th><th class="p-2">Status</th></tr></thead>
+    <tbody>
+      ${[
+        ['Hoje, 14:30','Maria Silva · 48 99999-0001','D2','PENDING'],
+        ['Hoje, 16:15','João Souza · 48 99999-0002','D0','PENDING'],
+        ['Amanhã, 09:00','Paula M. · 48 99999-0003','POS_CONSULTA','PENDING'],
+        ['Ontem, 10:20','Carla Dias · 48 99999-0004','D5','SENT'],
+      ].map(([q,l,t,s]) => `<tr class="border-t"><td class="p-2">${q}</td><td class="p-2">${l}</td><td class="p-2 font-mono text-xs">${t}</td><td class="p-2 ${s==='SENT'?'text-green-700':'text-slate-700'}">${s}</td></tr>`).join('')}
+    </tbody>
+  </table>
+</section>
+`);
+
+// ---------- VENDAS ----------
+page('vendas', `
+<header class="mb-6">
+  <h1 class="text-3xl font-bold">Vendas & Agendamento</h1>
+  <p class="text-slate-500">Scripts prontos para WhatsApp e recepção + agenda unificada.</p>
+</header>
+<section class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+  <div class="bg-white rounded-xl border p-6">
+    <h2 class="font-semibold mb-3">Script WhatsApp — Primeiro contato</h2>
+    <p class="text-sm bg-slate-50 p-3 rounded">"Olá Maria! Aqui é a Bruna da Clínica Pele &amp; Vida. Você se interessou por Botox, certo? Posso te explicar rapidinho como funciona e reservar um horário ainda esta semana?"</p>
+  </div>
+  <div class="bg-white rounded-xl border p-6">
+    <h2 class="font-semibold mb-3">Script Recepção — Objeção de preço</h2>
+    <p class="text-sm bg-slate-50 p-3 rounded">"Entendo perfeitamente! Muitos pacientes pensam assim antes. Posso te enviar o comparativo de resultado x investimento x durabilidade? Isso costuma ajudar a decidir com clareza."</p>
+  </div>
+</section>
+<section class="bg-white rounded-xl border p-6">
+  <h2 class="font-semibold mb-3">Próximos agendamentos</h2>
+  <table class="w-full text-sm">
+    <thead><tr class="text-left text-slate-500"><th class="p-2">Data/hora</th><th class="p-2">Paciente</th><th class="p-2">Procedimento</th><th class="p-2">Status</th></tr></thead>
+    <tbody>
+      ${[
+        ['22/04 · 14:00','Ana Costa','Consulta inicial','CONFIRMED','text-green-700'],
+        ['22/04 · 15:30','Fernanda L.','Botox','SCHEDULED','text-slate-700'],
+        ['23/04 · 09:00','Roberto F.','Preenchimento','SCHEDULED','text-slate-700'],
+        ['23/04 · 11:00','Carla Dias','Laser CO2','SCHEDULED','text-slate-700'],
+      ].map(([d,p,pr,s,color]) => `<tr class="border-t"><td class="p-2">${d}</td><td class="p-2 font-medium">${p}</td><td class="p-2">${pr}</td><td class="p-2 ${color}">${s}</td></tr>`).join('')}
+    </tbody>
+  </table>
+</section>
+`);
+
+// ---------- AVALIAÇÕES ----------
+page('avaliacoes', `
+<header class="mb-6 flex justify-between items-center">
+  <div>
+    <h1 class="text-3xl font-bold">Avaliações</h1>
+    <p class="text-slate-500">Google Business Profile sincronizado · Respostas com IA.</p>
+  </div>
+  <button class="rounded-lg bg-primary text-white px-4 py-2 text-sm">Sincronizar Google</button>
+</header>
+<section class="bg-white rounded-xl border p-6 grid grid-cols-2 gap-4 mb-6">
+  <div><div class="text-xs text-slate-500">Média</div><div class="text-3xl font-bold">4.8 ⭐</div></div>
+  <div><div class="text-xs text-slate-500">Total de reviews</div><div class="text-3xl font-bold">247</div></div>
+</section>
+${[
+  ['Paula M.',5,'Atendimento excepcional, amei o resultado! Dra. Ana é super atenciosa.','Obrigada, Paula! Que alegria saber que ficou feliz com o resultado. Nosso time agradece o carinho — te esperamos nos retornos! 💙',true],
+  ['Carlos R.',4,'Muito bom, só achei o tempo de espera um pouco longo.','Oi Carlos, obrigado pela avaliação sincera! Já ajustamos a agenda para reduzir espera. Qualquer coisa, fale conosco pelo WhatsApp.',false],
+  ['Beatriz S.',5,'Clínica impecável, resultado natural e equipe maravilhosa.','',false],
+].map(([a,r,c,rep,done]) => `
+  <div class="bg-white rounded-xl border p-4 mb-3">
+    <div class="flex justify-between"><div class="font-medium">${a} — ${r} ⭐</div><div class="text-xs text-slate-400">há 3 dias</div></div>
+    <p class="text-sm mt-1">${c}</p>
+    ${rep ? `<div class="mt-3 pl-3 border-l-4 border-primary"><div class="text-xs text-primary font-semibold mb-1">Resposta ${done?'publicada':'(rascunho IA)'}</div><p class="text-sm">${rep}</p></div>` : '<div class="mt-2"><button class="text-xs rounded bg-primary text-white px-3 py-1">Gerar rascunho com IA</button></div>'}
+  </div>`).join('')}
+`);
+
+// ---------- PÓS-VENDA ----------
+page('posvenda', `
+<header class="mb-6">
+  <h1 class="text-3xl font-bold">Pós-venda &amp; Retenção</h1>
+  <p class="text-slate-500">Lembretes automáticos de retorno e upsell de pacote anual.</p>
+</header>
+<section class="bg-white rounded-xl border p-6 mb-6">
+  <h2 class="font-semibold mb-3">Lembretes ativos</h2>
+  <table class="w-full text-sm">
+    <thead><tr class="text-left text-slate-500"><th class="p-2">Próximo envio</th><th class="p-2">Paciente</th><th class="p-2">Intervalo</th><th class="p-2">Status</th></tr></thead>
+    <tbody>
+      ${[
+        ['15/05/2026','Juliana R. · Preenchimento','6 meses','PENDING'],
+        ['22/05/2026','Patrícia T. · Botox','6 meses','PENDING'],
+        ['10/07/2026','Roberto F. · Harmonização','6 meses','PENDING'],
+        ['05/10/2026','Ana Costa · Check-up anual','12 meses','PENDING'],
+      ].map(([d,p,i,s]) => `<tr class="border-t"><td class="p-2">${d}</td><td class="p-2 font-medium">${p}</td><td class="p-2">${i}</td><td class="p-2">${s}</td></tr>`).join('')}
+    </tbody>
+  </table>
+</section>
+<section class="bg-white rounded-xl border p-6">
+  <h2 class="font-semibold mb-3">Candidatos a pacote anual (2+ retornos)</h2>
+  ${[
+    ['Patrícia T.','48 99999-0008','3 retornos · Botox'],
+    ['Juliana R.','48 99999-0009','2 retornos · Preenchimento'],
+  ].map(([n,p,h]) => `
+    <div class="border-t py-3 flex justify-between">
+      <div><div class="font-medium">${n}</div><div class="text-xs text-slate-500">${p} · ${h}</div></div>
+      <div class="text-right text-sm"><div class="font-medium">Pacote Anual Essencial</div><div class="text-xs text-slate-500">R$ 2.890</div></div>
+    </div>`).join('')}
+</section>
+`);
+
+// ---------- INDICAÇÕES ----------
+page('indicacoes', `
+<header class="mb-6">
+  <h1 class="text-3xl font-bold">Indique-e-Ganhe</h1>
+  <p class="text-slate-500">Códigos únicos · tracking automático · recompensas.</p>
+</header>
+<section class="bg-white rounded-xl border p-6 grid grid-cols-4 gap-4 mb-6">
+  ${[['Indicadores',34],['Usos do código',47],['Recompensas pagas','R$ 4.200'],['Taxa conversão','138%']].map(([l,v]) => `
+    <div><div class="text-xs text-slate-500">${l}</div><div class="text-2xl font-bold">${v}</div></div>`).join('')}
+</section>
+<section class="bg-white rounded-xl border p-6">
+  <h2 class="font-semibold mb-3">Códigos ativos</h2>
+  <table class="w-full text-sm">
+    <thead><tr class="text-left text-slate-500"><th class="p-2">Código</th><th class="p-2">Indicador</th><th class="p-2">Recompensa</th><th class="p-2">Usos</th><th class="p-2">Pago</th></tr></thead>
+    <tbody>
+      ${[
+        ['MARIA-8F3K2','Maria Silva','Cashback · R$ 150',4,'R$ 600'],
+        ['JOAO-9M1P0','João Souza','Cashback · R$ 150',2,'R$ 300'],
+        ['PATRICIA-4L','Patrícia T.','Crédito · R$ 200',3,'R$ 600'],
+        ['BEATRIZ-7N','Beatriz S.','Cashback · R$ 150',1,'R$ 150'],
+      ].map(([c,r,re,u,p]) => `<tr class="border-t"><td class="p-2 font-mono">${c}</td><td class="p-2">${r}</td><td class="p-2">${re}</td><td class="p-2">${u}</td><td class="p-2">${p}</td></tr>`).join('')}
+    </tbody>
+  </table>
+</section>
+`);
+
+// start
+show('overview');
+</script>
+</body>
+</html>

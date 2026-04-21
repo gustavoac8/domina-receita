@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: domina-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: domina
+      POSTGRES_PASSWORD: domina
+      POSTGRES_DB: domina_receita
+    ports:
+      - "5432:5432"
+    volumes:
+      - domina_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U domina -d domina_receita"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  domina_pgdata:

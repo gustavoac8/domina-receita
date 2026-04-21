@@ -1,0 +1,14 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "npm install && npx prisma generate && npm run build && ls -la dist/"
+  },
+  "deploy": {
+    "startCommand": "echo '--- /app contents ---' && ls -la /app/ && echo '--- /app/dist contents ---' && ls -la /app/dist/ 2>&1 || echo 'NO DIST FOLDER'; npx prisma migrate resolve --applied 0001_init 2>&1 || true; npx prisma migrate deploy 2>&1 || true; node /app/dist/main",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3,
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 120
+  }
+}

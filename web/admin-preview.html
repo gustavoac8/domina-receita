@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Super Admin · DominaReceita Médica</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: { colors: { primary: '#0B6E99', accent: '#E8C547', dark: '#0A2540' } } } };
+</script>
+<style>
+  body{font-family:'Inter',system-ui,-apple-system,sans-serif;}
+  .page{display:none;}
+  .page.active{display:block;}
+  .nav-item.active{background:#0B6E99;color:#fff;}
+  .nav-item.admin.active{background:#DC2626;}
+</style>
+</head>
+<body class="bg-slate-100">
+<div class="min-h-screen flex">
+  <!-- SIDEBAR -->
+  <aside class="w-72 bg-slate-900 text-white flex flex-col">
+    <div class="p-5 border-b border-slate-800">
+      <div class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-lg bg-red-600 flex items-center justify-center font-bold text-sm">🔴</div>
+        <div>
+          <div class="font-bold text-sm">SUPER ADMIN</div>
+          <div class="text-xs text-slate-400 truncate">gustavoac8@gmail.com</div>
+        </div>
+      </div>
+      <div class="mt-3 text-xs text-red-400 bg-red-950/40 rounded-lg p-2">⚠️ Você tem acesso total à plataforma</div>
+    </div>
+    <nav id="nav" class="flex-1 p-3 space-y-1 text-sm overflow-y-auto"></nav>
+    <div class="m-3 text-xs text-slate-500 border-t border-slate-800 pt-3">
+      DominaReceita v1.2.0 · Demo
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 overflow-x-hidden">
+    <div id="pages" class="p-8 max-w-7xl mx-auto"></div>
+  </main>
+</div>
+
+<script>
+const NAV = [
+  { group:'Plataforma' },
+  { id:'overview',    label:'Visão da plataforma',    icon:'📈', admin:true },
+  { id:'clinicas',    label:'Clínicas ativas',         icon:'🏥', admin:true },
+  { id:'mrr',         label:'Receita e MRR',           icon:'💰', admin:true },
+  { id:'impersonate', label:'Impersonar médico',       icon:'👤', admin:true },
+
+  { group:'Meu CRM (vendas do SaaS)' },
+  { id:'leads',       label:'Leads (funil comercial)', icon:'🎯', admin:true },
+  { id:'demos',       label:'Demos agendadas',         icon:'📅', admin:true },
+  { id:'trials',      label:'Trials ativos',           icon:'🧪', admin:true },
+  { id:'churn',       label:'Churn e risco',           icon:'⚠️', admin:true },
+
+  { group:'Operação' },
+  { id:'usuarios',    label:'Usuários e permissões',   icon:'🔑', admin:true },
+  { id:'logs',        label:'Logs e auditoria',        icon:'📋', admin:true },
+  { id:'flags',       label:'Feature flags',           icon:'🚩', admin:true },
+  { id:'integracoes', label:'Integrações & API keys',  icon:'🔌', admin:true },
+];
+
+const navEl = document.getElementById('nav');
+NAV.forEach(n => {
+  if (n.group) {
+    const h = document.createElement('div');
+    h.className = 'text-xs uppercase tracking-wider text-slate-500 mt-5 mb-1 px-3';
+    h.textContent = n.group;
+    navEl.appendChild(h);
+    return;
+  }
+  const a = document.createElement('a');
+  a.className = 'nav-item admin flex items-center gap-2 rounded-lg px-3 py-2 cursor-pointer hover:bg-slate-800';
+  a.dataset.page = n.id;
+  a.innerHTML = `<span>${n.icon}</span>${n.label}`;
+  a.onclick = () => show(n.id);
+  navEl.appendChild(a);
+});
+
+function show(id) {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === id));
+  document.querySelectorAll('.page').forEach(el => el.classList.toggle('active', el.id === 'page-' + id));
+}
+
+const PAGES = document.getElementById('pages');
+function page(id, html) {
+  const d = document.createElement('div');
+  d.id = 'page-' + id;
+  d.className = 'page';
+  d.innerHTML = html;
+  PAGES.appendChild(d);
+}
+
+// ========== OVERVIEW ==========
+page('overview', `
+<header class="mb-6">
+  <h1 class="text-3xl font-bold">Visão da plataforma</h1>
+  <p class="text-slate-500">Estado geral do DominaReceita Médica · Últimos 30 dias</p>
+</header>
+
+<section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+  ${[
+    ['Clínicas ativas', '127', '+12 este mês', 'text-green-700'],
+    ['MRR', 'R$ 94.320', '+R$ 8.940', 'text-green-700'],
+    ['Leads novos', '284', '+48%', 'text-green-700'],
+    ['Churn (30d)', '2.4%', '-0.8pp', 'text-green-700'],
+  ].map(([l,v,d,c]) => `
+    <div class="bg-white rounded-xl border p-5">
+      <div class="text-xs text-slate-500">${l}</div>
+      <div class="text-2xl font-bold mt-1">${v}</div>
+      <div class="text-xs ${c} mt-1">${d}</div>
+    </div>`).join('')}
+</section>
+
+<section class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+  <div class="bg-white rounded-xl border p-6">
+    <h2 class="font-semibold mb-3">MRR por plano</h2>
+    ${[
+      ['Starter (R$ 497)', 68, 'bg-slate-400', 'R$ 33.796'],
+      ['Pro (R$ 997)', 47, 'bg-primary', 'R$ 46.859'],
+      ['Elite (R$ 1.997)', 12, 'bg-accent', 'R$ 23.964'],
+    ].map(([l, n, c, v]) => `
+      <div class="mb-3">
+        <div class="flex justify-between text-sm"><span>${l}</span><strong>${n} clínicas · ${v}</strong></div>
+        <div class="h-2 bg-slate-100 rounded mt-1"><div class="${c} h-full rounded" style="width:${n/127*100}%"></div></div>
+      </div>`).join('')}
+  </div>
+  <div class="bg-white rounded-xl border p-6">
+    <h2 class="font-semibold mb-3">Funil de aquisição (último mês)</h2>
+    ${[
+      ['Visitantes site', 12480, '#0B6E99'],
+      ['Leads no CRM', 284, '#3B82F6'],
+      ['Demos agendadas', 86, '#10B981'],
+      ['Trial iniciado', 52, '#F59E0B'],
+      ['Convertido em pago', 23, '#E8C547'],
+    ].map(([l,v,c]) => `
+      <div class="mb-2">
+        <div class="flex justify-between text-sm"><span>${l}</span><strong>${v.toLocaleString('pt-BR')}</strong></div>
+        <div class="h-2 bg-slate-100 rounded"><div style="width:${v/12480*100}%;background:${c}" class="h-full rounded"></div></div>
+      </div>`).join('')}
+    <div class="mt-3 text-xs text-slate-500">Taxa conversão lead→pago: <strong>8.1%</strong> · CAC: <strong>R$ 312</strong></div>
+  </div>
+</section>
+
+<section class="bg-white rounded-xl border p-6">
+  <h2 class="font-semibold mb-3">Top clínicas por uso (últimos 7 dias)</h2>
+  <table class="w-full text-sm">
+    <thead><tr class="text-left text-slate-500 border-b"><th class="p-2">Clínica</th><th class="p-2">Médico</th><th class="p-2">Plano</th><th class="p-2">Logins</th><th class="p-2">Leads processados</th><th class="p-2">Ação</th></tr></thead>
+    <tbody>
+      ${[
+        ['Clínica Pele & Vida','Dra. Ana Luiza','Pro','28','142','Ver'],
+        ['Ortho Center BH','Dr. Rafael F.','Elite','54','98','Ver'],
+        ['Cirurgia Estética RJ','Dra. Juliana P.','Pro','22','76','Ver'],
+        ['Pediatria Viver','Dr. Marcos S.','Starter','14','43','Ver'],
+        ['Dermato Luz','Dra. Marina C.','Pro','19','61','Ver'],
+      ].map(([c,m,p,lo,le,a]) => `
+        <tr class="border-b"><td class="p-2 font-medium">${c}</td><td class="p-2">${m}</td><td class="p-2"><span class="text-xs bg-slate-100 rounded px-2 py-1">${p}</span></td><td class="p-2">${lo}</td><td class="p-2">${le}</td><td class="p-2"><button class="text-primary text-xs font-semibold">${a} →</button></td></tr>`).join('')}
+    </tbody>
+  </table>
+</section>
+`);
+
+// ========== CLINICAS ==========
+page('clinicas', `
+<header class="mb-6 flex justify-between items-center">
+  <div>
+    <h1 class="text-3xl font-bold">Clínicas ativas</h1>
+    <p class="text-slate-500">127 clínicas em 4 estágios de ciclo de vida.</p>
+  </div>
+  <div class="flex gap-2">
+    <input placeholder="Buscar clínica..." class="border rounded-lg px-3 py-2 text-sm"/>
+    <select class="border rounded-lg px-3 py-2 text-sm"><option>Todos planos</option><option>Starter</option><option>Pro</option><option>Elite</option></select>
+  </div>
+</header>
+<section class="bg-white rounded-xl border overflow-hidden">
+  <table class="w-full text-sm">
+    <thead><tr class="bg-slate-50 text-left text-slate-500 uppercase text-xs"><th class="p-3">Clínica</th><th class="p-3">Médico</th><th class="p-3">Cidade</th><th class="p-3">Especialidade</th><th class="p-3">Plano</th><th class="p-3">MRR</th><th class="p-3">Status</th><th class="p-3">Desde</th><th class="p-3"></th></tr></thead>
+    <tbody>
+      ${[
+        ['Clínica Pele & Vida','Dra. Ana Luiza','Florianópolis/SC','Dermatologia','Pro','R$ 997','ATIVA','15/01/26','text-green-700'],
+        ['Ortho Center BH','Dr. Rafael F.','Belo Horizonte/MG','Ortopedia','Elite','R$ 1.997','ATIVA','22/02/26','text-green-700'],
+        ['Cirurgia Estética RJ','Dra. Juliana P.','Rio de Janeiro/RJ','Cir. Plástica','Pro','R$ 997','ATIVA','03/03/26','text-green-700'],
+        ['Pediatria Viver','Dr. Marcos S.','Curitiba/PR','Pediatria','Starter','R$ 497','ATIVA','10/03/26','text-green-700'],
+        ['Dermato Luz','Dra. Marina C.','Recife/PE','Dermatologia','Pro','R$ 997','ATIVA','18/03/26','text-green-700'],
+        ['GinecoCare','Dra. Paula H.','São Paulo/SP','Ginecologia','Pro','R$ 997','TRIAL','14/04/26','text-amber-700'],
+        ['CardioBem','Dr. Hugo T.','Porto Alegre/RS','Cardiologia','Starter','R$ 0','TRIAL','16/04/26','text-amber-700'],
+        ['Odonto Sorrir','Dra. Renata L.','Salvador/BA','Odontologia','Starter','R$ 497','EM RISCO','08/02/26','text-red-700'],
+      ].map(([c,m,ci,e,p,mrr,s,d,col]) => `
+        <tr class="border-t hover:bg-slate-50">
+          <td class="p-3 font-medium">${c}</td><td class="p-3">${m}</td><td class="p-3 text-xs">${ci}</td>
+          <td class="p-3 text-xs">${e}</td><td class="p-3"><span class="text-xs bg-slate-100 rounded px-2 py-1">${p}</span></td>
+          <td class="p-3">${mrr}</td><td class="p-3 text-xs font-semibold ${col}">${s}</td><td class="p-3 text-xs text-slate-500">${d}</td>
+          <td class="p-3"><button class="text-primary text-xs">Impersonar</button></td>
+        </tr>`).join('')}
+    </tbody>
+  </table>
+</section>
+`);
+
+// ========== MRR ==========
+page('mrr', `
+<header class="mb-6">
+  <h1 class="text-3xl font-bold">Receita e MRR</h1>
+  <p class="text-slate-500">Métricas financeiras do SaaS em tempo real.</p>
+</header>
+
+<section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+  ${[
+    ['MRR atual','R$ 94.320','+10.4%'],
+    ['ARR projetado','R$ 1.13M','+R$ 107k'],
+    ['ARPU','R$ 742','+R$ 18'],
+    ['LTV médio','R$ 14.850','20 meses'],
+  ].map(([l,v,d]) => `
+    <div class="bg-white rounded-xl border p-5">
+      <div class="text-xs text-slate-500">${l}</div>
+      <div class="text-2xl font-bold mt-1">${v}</div>
+      <div class="text-xs text-green-700 mt-1">${d}</div>
+    </div>`).join('')}
+</section>
+
+<section class="bg-white rounded-xl border p-6 mb-6">
+  <h2 class="font-semibold mb-4">Evolução do MRR (últimos 6 meses)</h2>
+  <div class="flex items-end gap-2 h-48">
+    ${[
+      ['Nov', 42000],
+      ['Dez', 54500],
+      ['Jan', 62800],
+      ['Fev', 71200],
+      ['Mar', 85380],
+      ['Abr', 94320],
+    ].map(([m,v]) => `
+      <div class="flex-1 flex flex-col items-center justify-end">
+        <div class="text-xs font-semibold mb-1">R$ ${(v/1000).toFixed(1)}k</div>
+        <div class="bg-primary w-full rounded-t" style="height:${v/94320*100}%"></div>
+        <div class="text-xs text-slate-500 mt-2">${m}</div>
+      </div>`).join('')}
+  </div>
+</section>
+
+<section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  <div class="bg-white rounded-xl border p-6">
+    <h2 class="font-semibold mb-3">Movimentação do mês</h2>
+    <ul class="text-sm space-y-2">
+      <li class="flex justify-between"><span>+ Novas assinaturas</span><strong class="text-green-700">+R$ 11.460 (12 clínicas)</strong></li>
+      <li class="flex justify-between"><span>+ Upgrades</span><strong class="text-green-700">+R$ 2.500 (5 clínicas)</strong></li>
+      <li class="flex justify-between"><span>- Downgrades</span><strong class="text-amber-700">-R$ 1.000 (2 clínicas)</strong></li>
+      <li class="flex justify-between"><span>- Cancelamentos</span><strong class="text-red-700">-R$ 4.020 (5 clínicas)</strong></li>
+      <li class="flex justify-between border-t pt-2 mt-2"><span>Net MRR</span><strong class="text-green-700">+R$ 8.940</strong></li>
+    </ul>
+  </div>
+  <div class="bg-white rounded-xl border p-6">
+    <h2 class="font-semibold mb-3">Cohort retention (mês de entrada)</h2>
+    <table class="w-full text-xs">
+      <thead><tr class="text-slate-500"><th class="p-1 text-left">Cohort</th><th>M1</th><th>M2</th><th>M3</th><th>M4</th></tr></thead>
+      <tbody>
+        <tr class="border-t"><td class="p-1 font-semibold">Jan/26</td><td class="text-center bg-green-100">100%</td><td class="text-center bg-green-100">96%</td><td class="text-center bg-green-50">92%</td><td class="text-center bg-green-50">89%</td></tr>
+        <tr class="border-t"><td class="p-1 font-semibold">Fev/26</td><td class="text-center bg-green-100">100%</td><td class="text-center bg-green-100">94%</td><td class="text-center bg-green-50">90%</td><td></td></tr>
+        <tr class="border-t"><td class="p-1 font-semibold">Mar/26</td><td class="text-center bg-green-100">100%</td><td class="text-center bg-green-100">97%</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+`);
+
+// ========== IMPERSONATE ==========
+page('impersonate', `
+<header class="mb-6">
+  <h1 class="text-3xl font-bold">Impersonar médico</h1>
+  <p class="text-slate-500">Acesse a conta de qualquer cliente para suporte ou diagnóstico.</p>
+</header>
+<div class="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 mb-6">
+  <div class="font-semibold text-red-700">⚠️ Ação registrada em audit log</div>
+  <p class="text-sm text-red-600">Toda sessão impersonada é gravada com timestamp, páginas visitadas e ações realizadas. Uso exclusivo para suporte ou troubleshooting.</p>
+</div>
+<div class="bg-white rounded-xl border p-6">
+  <input placeholder="Buscar por email ou clínica..." class="w-full border rounded-lg px-4 py-3 mb-4 text-sm"/>
+  ${[
+    ['demo@dominareceita.com','Dr. Demo · Clínica Demo','Pro','online há 2min'],
+    ['ana.luiza@peleevida.com.br','Dra. Ana Luiza · Pele & Vida','Pro','online há 8min'],
+    ['rafael@orthocenter.com.br','Dr. Rafael F. · Ortho Center','Elite','offline há 1h'],
+    ['juliana.p@cirurgiaestetica.com.br','Dra. Juliana P. · Cir. Estética','Pro','online há 14min'],
+  ].map(([e,n,p,s]) => `
+    <div class="flex justify-between items-center border-t py-3">
+      <div>
+        <div class="font-medium text-sm">${n}</div>
+        <div class="text-xs text-slate-500">${e} · <span class="text-xs bg-slate-100 rounded px-2 py-0.5">${p}</span> · ${s}</div>
+      </div>
+      <button class="bg-red-600 text-white text-xs rounded-lg px-4 py-2 font-semibold hover:bg-red-700">🔐 Impersonar</button>
+    </div>`).join('')}
+</div>
+`);
+
+// ========== LEADS (Gustavo's internal CRM) ==========
+page('leads', `
+<header class="mb-6 flex justify-between items-center">
+  <div>
+    <h1 class="text-3xl font-bold">Meu CRM — Leads comerciais</h1>
+    <p class="text-slate-500">Médicos interessados em assinar o DominaReceita. SEUS leads, do seu funil de venda.</p>
+  </div>
+  <div class="flex gap-2">
+    <button class="bg-primary text-white rounded-lg px-4 py-2 text-sm font-semibold">+ Novo lead</button>
+    <button class="border rounded-lg px-4 py-2 text-sm">Importar CSV</button>
+    <button class="border rounded-lg px-4 py-2 text-sm">Exportar</button>
+  </div>
+</header>
+
+<section class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+  ${[
+    ['NOVO',68,'bg-slate-50','text-slate-700'],
+    ['QUALIFICADO',34,'bg-blue-50','text-blue-700'],
+    ['DEMO AGENDADA',18,'bg-amber-50','text-amber-700'],
+    ['TRIAL',12,'bg-green-50','text-green-700'],
+    ['FECHADO',23,'bg-purple-50','text-purple-700'],
+  ].map(([s,n,bg,tc]) => `
+    <div class="${bg} rounded-xl p-4 text-center">
+      <div class="text-xs font-semibold ${tc} uppercase">${s}</div>
+      <div class="text-2xl font-bold mt-1">${n}</div>
+    </div>`).join('')}
+</section>
+
+<section class="bg-white rounded-xl border overflow-hidden">
+  <table class="w-full text-sm">
+    <thead><tr class="bg-slate-50 text-left text-slate-500 uppercase text-xs"><th class="p-3">Nome</th><th class="p-3">Especialidade</th><th class="p-3">Cidade</th><th class="p-3">Origem</th><th class="p-3">Valor</th><th class="p-3">Estágio</th><th class="p-3">Última ação</th><th class="p-3"></th></tr></thead>
+    <tbody>
+      ${[
+        ['Dra. Beatriz Farias','Dermatologia','São Paulo/SP','Google Ads','R$ 11.964/ano','DEMO AGENDADA','Reunião hoje 15h','text-amber-700'],
+        ['Dr. Marcelo Vieira','Cir. Plástica','Belo Horizonte/MG','Meta Ads','R$ 23.964/ano','TRIAL','Trial dia 3/7','text-green-700'],
+        ['Dra. Fernanda Oliveira','Ortopedia','Curitiba/PR','Indicação','R$ 5.964/ano','QUALIFICADO','Conversa WhatsApp','text-blue-700'],
+        ['Dr. Tiago Souza','Ginecologia','Fortaleza/CE','Orgânico','R$ 11.964/ano','DEMO AGENDADA','Demo amanhã 10h','text-amber-700'],
+        ['Dra. Camila Reis','Dermatologia','Brasília/DF','Blog (artigo pilar)','R$ 11.964/ano','NOVO','Baixou e-book','text-slate-700'],
+        ['Dr. Roberto Lima','Pediatria','Manaus/AM','Google Ads','R$ 5.964/ano','QUALIFICADO','Email enviado','text-blue-700'],
+        ['Dra. Patrícia Gomes','Odontologia','Goiânia/GO','LinkedIn','R$ 11.964/ano','TRIAL','Trial dia 5/7','text-green-700'],
+        ['Dr. Felipe Martins','Cardiologia','Salvador/BA','Indicação','R$ 23.964/ano','FECHADO','Contrato assinado 18/04','text-purple-700'],
+      ].map(([n,e,c,o,v,s,u,col]) => `
+        <tr class="border-t hover:bg-slate-50">
+          <td class="p-3 font-medium">${n}</td><td class="p-3 text-xs">${e}</td><td class="p-3 text-xs">${c}</td>
+          <td class="p-3 text-xs">${o}</td><td class="p-3 font-semibold text-xs">${v}</td>
+          <td class="p-3 text-xs font-semibold ${col}">${s}</td><td class="p-3 text-xs text-slate-500">${u}</td>
+          <td class="p-3"><button class="text-primary text-xs">Abrir →</button></td>
+        </tr>`).join('')}
+    </tbody>
+  </table>
+</section>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
+  <div class="bg-white rounded-xl border p-5">
+    <div class="text-xs text-slate-500">Pipeline total</div>
+    <div class="text-2xl font-bold">R$ 412.680</div>
+    <div class="text-xs text-green-700 mt-1">155 leads ponderados</div>
+  </div>
+  <div class="bg-white rounded-xl border p-5">
+    <div class="text-xs text-slate-500">Conversão NOVO → FECHADO</div>
+    <div class="text-2xl font-bold">14.8%</div>
+    <div class="text-xs text-slate-500 mt-1">Ciclo médio: 18 dias</div>
+  </div>
+  <div class="bg-white rounded-xl border p-5">
+    <div class="text-xs text-slate-500">CAC pago vs orgânico</div>
+    <div class="text-2xl font-bold">R$ 312 <span class="text-base text-slate-400">/ R$ 84</span></div>
+    <div class="text-xs text-slate-500 mt-1">Orgânico 3.7x mais eficiente</div>
+  </div>
+</div>
+`);
+
+// ========== DEMOS ==========
+page('demos', `
+<header class="mb-6">
+  <h1 class="text-3xl font-bold">Demos agendadas</h1>
+  <p class="text-slate-500">Sua agenda de apresentações do SaaS para médicos interessados.</p>
+</header>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+  ${[
+    ['Hoje','3','Próxima: 15h00 · Dra. Beatriz'],
+    ['Esta semana','12','Taxa de show-up: 78%'],
+    ['Esta semana → fechado','4','Conversão: 33%'],
+  ].map(([l,v,s]) => `
+    <div class="bg-white rounded-xl border p-5">
+      <div class="text-xs text-slate-500">${l}</div>
+      <div class="text-3xl font-bold mt-1">${v}</div>
+      <div class="text-xs text-slate-500 mt-2">${s}</div>
+    </div>`).join('')}
+</div>
+<section class="bg-white rounded-xl border p-6">
+  <h2 class="font-semibold mb-4">Próximas demos</h2>
+  ${[
+    ['Hoje · 15:00','Dra. Beatriz Farias','Dermatologia · SP','Google Meet','Pro ~R$ 12k/ano'],
+    ['Hoje · 17:30','Dr. João Castro','Urologia · RJ','Zoom','Starter ~R$ 6k/ano'],
+    ['Amanhã · 10:00','Dr. Tiago Souza','Ginecologia · CE','Google Meet','Pro ~R$ 12k/ano'],
+    ['Amanhã · 14:00','Dra. Larissa Meira','Cardiologia · MG','Zoom','Elite ~R$ 24k/ano'],
+    ['Sex · 11:00','Dr. André Figueira','Oftalmologia · DF','Google Meet','Pro ~R$ 12k/ano'],
+  ].map(([q,n,e,p,v]) => `
+    <div class="flex justify-between items-center border-t py-3">
+      <div>
+        <div class="font-semibold text-sm">${q} — ${n}</div>
+        <div class="text-xs text-slate-500">${e} · ${p}</div>
+      </div>
+      <div class="text-right">
+        <div class="text-sm font-semibold text-green-700">${v}</div>
+        <button class="text-xs text-primary mt-1">Ver detalhes →</button>
+      </div>
+    </div>`).join('')}
+</section>
+`);
+
+// ========== TRIALS ==========
+page('trials', `
+<header class="mb-6">
+  <h1 class="text-3xl font-bold">Trials ativos</h1>
+  <p class="text-slate-500">12 médicos testando. Dica: quem usa 5+ vezes no trial converte 4x mais.</p>
+</header>
+<section class="bg-white rounded-xl border overflow-hidden">
+  <table class="w-full text-sm">
+    <thead><tr class="bg-slate-50 text-left text-slate-500 uppercase text-xs"><th class="p-3">Médico</th><th class="p-3">Plano testando</th><th class="p-3">Dia do trial</th><th class="p-3">Uso</th><th class="p-3">Probabilidade conversão</th><th class="p-3">Ação recomendada</th></tr></thead>
+    <tbody>
+      ${[
+        ['Dr. Marcelo Vieira','Pro','3/7','Alto (18 logins)','87%','Ligar amanhã','text-green-700','bg-green-500'],
+        ['Dra. Patrícia Gomes','Starter','5/7','Médio (9 logins)','64%','Enviar case','text-amber-700','bg-amber-500'],
+        ['Dra. Paula H.','Pro','2/7','Alto (12 logins)','82%','Acompanhar','text-green-700','bg-green-500'],
+        ['Dr. Hugo T.','Starter','1/7','Baixo (2 logins)','28%','Ligar HOJE','text-red-700','bg-red-500'],
+        ['Dra. Renata M.','Pro','6/7','Alto (24 logins)','92%','Fechar amanhã','text-green-700','bg-green-500'],
+      ].map(([n,p,d,u,c,a,col,bg]) => `
+        <tr class="border-t">
+          <td class="p-3 font-medium">${n}</td><td class="p-3"><span class="text-xs bg-slate-100 rounded px-2 py-1">${p}</span></td>
+          <td class="p-3 text-xs">${d}</td><td class="p-3 text-xs">${u}</td>
+          <td class="p-3"><div class="flex items-center gap-2"><div class="flex-1 bg-slate-100 rounded h-2"><div class="${bg} h-full rounded" style="width:${c}"></div></div><span class="text-xs font-semibold">${c}</span></div></td>
+          <td class="p-3 text-xs font-semibold ${col}">${a}</td>
+        </tr>`).join('')}
+    </tbody>
+  </table>
+</section>
+`);
+
+// ========== CHURN ==========
+page('churn', `
+<header class="mb-6">
+  <h1 class="text-3xl font-bold">Churn e risco</h1>
+  <p class="text-slate-500">Clínicas em risco de cancelar — detectado por IA com 14 dias de antecedência.</p>
+</header>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+  ${[
+    ['Churn 30d','2.4%','-0.8pp'],
+    ['Clínicas em risco','8','Ativar agora'],
+    ['MRR em risco','R$ 6.485','/mês'],
+    ['LTV perdido estimado','R$ 97k','se não agir'],
+  ].map(([l,v,d]) => `
+    <div class="bg-white rounded-xl border p-5">
+      <div class="text-xs text-slate-500">${l}</div>
+      <div class="text-2xl font-bold mt-1">${v}</div>
+      <div class="text-xs text-slate-500 mt-1">${d}</div>
+    </div>`).join('')}
+</div>
+<section class="bg-white rounded-xl border p-6">
+  <h2 class="font-semibold mb-3">Clínicas em risco (próximos 30 dias)</h2>
+  ${[
+    ['Odonto Sorrir','Dra. Renata L.','Salvador/BA','Starter','Sem login há 18 dias · 0 leads processados · 1 ticket aberto','ALTO'],
+    ['Cardio Center','Dr. Paulo R.','Belo Horizonte/MG','Pro','Downgrade solicitado · Ticket aberto sobre integração','ALTO'],
+    ['Clínica Vida','Dra. Maria F.','Goiânia/GO','Pro','NPS 4/10 na última pesquisa','MÉDIO'],
+    ['Dermato Sul','Dr. Leo K.','Porto Alegre/RS','Starter','Engajamento caiu 60%','MÉDIO'],
+  ].map(([c,m,ci,p,r,rk]) => `
+    <div class="border-t py-3">
+      <div class="flex justify-between items-start">
+        <div>
+          <div class="font-semibold">${c} — ${m}</div>
+          <div class="text-xs text-slate-500">${ci} · ${p}</div>
+          <div class="text-sm mt-1">${r}</div>
+        </div>
+        <div class="text-right">
+          <span class="text-xs font-bold ${rk==='ALTO'?'text-red-700 bg-red-50':'text-amber-700 bg-amber-50'} rounded px-2 py-1">${rk}</span>
+          <div><button class="mt-2 text-xs bg-primary text-white rounded px-3 py-1">Agendar call</button></div>
+        </div>
+      </div>
+    </div>`).join('')}
+</section>
+`);
+
+// ========== USUARIOS ==========
+page('usuarios', `
+<header class="mb-6">
+  <h1 class="text-3xl font-bold">Usuários e permissões</h1>
+  <p class="text-slate-500">Gerencie sua equipe interna e permissões de acesso ao admin.</p>
+</header>
+<section class="bg-white rounded-xl border p-6">
+  <table class="w-full text-sm">
+    <thead><tr class="text-left text-slate-500 border-b text-xs uppercase"><th class="p-2">Email</th><th class="p-2">Nome</th><th class="p-2">Papel</th><th class="p-2">Último login</th><th class="p-2">Ação</th></tr></thead>
+    <tbody>
+      <tr class="border-b bg-red-50/50">
+        <td class="p-2 font-mono text-xs">gustavoac8@gmail.com</td>
+        <td class="p-2 font-semibold">Gustavo A. (você)</td>
+        <td class="p-2"><span class="text-xs bg-red-600 text-white rounded px-2 py-1">SUPER_ADMIN</span></td>
+        <td class="p-2 text-xs">agora</td>
+        <td class="p-2 text-xs text-slate-400">—</td>
+      </tr>
+      <tr class="border-b"><td class="p-2 font-mono text-xs">suporte@dominareceita.com</td><td class="p-2">Equipe Suporte</td><td class="p-2"><span class="text-xs bg-blue-100 text-blue-800 rounded px-2 py-1">STAFF</span></td><td class="p-2 text-xs">há 2h</td><td class="p-2"><button class="text-primary text-xs">Editar</button></td></tr>
+      <tr class="border-b"><td class="p-2 font-mono text-xs">vendas@dominareceita.com</td><td class="p-2">Equipe Vendas</td><td class="p-2"><span class="text-xs bg-blue-100 text-blue-800 rounded px-2 py-1">STAFF</span></td><td class="p-2 text-xs">há 14m</td><td class="p-2"><button class="text-primary text-xs">Editar</button></td></tr>
+    </tbody>
+  </table>
+  <button class="mt-4 bg-primary text-white rounded-lg px-4 py-2 text-sm font-semibold">+ Convidar novo membro</button>
+</section>
+`);
+
+// ========== LOGS ==========
+page('logs', `
+<header class="mb-6">
+  <h1 class="text-3xl font-bold">Logs e auditoria</h1>
+  <p class="text-slate-500">Tudo que acontece na plataforma. Retenção de 365 dias.</p>
+</header>
+<section class="bg-white rounded-xl border p-6">
+  <div class="flex gap-2 mb-4">
+    <input placeholder="Buscar por usuário ou ação..." class="flex-1 border rounded-lg px-3 py-2 text-sm"/>
+    <select class="border rounded-lg px-3 py-2 text-sm"><option>Todas ações</option><option>Login</option><option>Impersonate</option><option>Delete</option></select>
+  </div>
+  <div class="font-mono text-xs space-y-1 bg-slate-900 text-slate-100 rounded-lg p-4 max-h-96 overflow-y-auto">
+    <div><span class="text-green-400">[19/04 14:32]</span> gustavoac8@gmail.com · LOGIN · ip 177.45.12.8</div>
+    <div><span class="text-amber-400">[19/04 14:28]</span> gustavoac8@gmail.com · IMPERSONATE_START · target ana.luiza@peleevida.com.br · reason: "suporte a pedido do cliente"</div>
+    <div><span class="text-green-400">[19/04 14:15]</span> rafael@orthocenter.com.br · LEAD_CREATE · lead-id 1892</div>
+    <div><span class="text-green-400">[19/04 13:58]</span> demo@dominareceita.com · CAMPAIGN_PUBLISH · campaign-id 421</div>
+    <div><span class="text-red-400">[19/04 13:40]</span> dermato@luz.com.br · AUTH_FAIL · 3 tentativas · ip 201.88.4.22</div>
+    <div><span class="text-green-400">[19/04 13:20]</span> gustavoac8@gmail.com · MARKETING_LEAD_UPDATE · id 142 · stage: QUALIFIED → DEMO_SCHEDULED</div>
+    <div><span class="text-amber-400">[19/04 12:55]</span> gustavoac8@gmail.com · PLAN_UPGRADE_FORCE · clinic dermato-luz · Starter → Pro</div>
+    <div><span class="text-green-400">[19/04 12:48]</span> juliana@cirurgia.com.br · SITE_PUBLISH</div>
+  </div>
+</section>
+`);
+
+// ========== FLAGS ==========
+page('flags', `
+<header class="mb-6">
+  <h1 class="text-3xl font-bold">Feature flags</h1>
+  <p class="text-slate-500">Ative ou desative funcionalidades por clínica, plano ou global.</p>
+</header>
+<section class="bg-white rounded-xl border p-6">
+  ${[
+    ['ai_briefing_v2','Briefing com IA multimodal (aceita imagem)','BETA','Ativado para 12 clínicas'],
+    ['gads_auto_bidding','Google Ads com lance automático por IA','BETA','Ativado para plano Elite'],
+    ['whatsapp_voice','Mensagens de voz automáticas no follow-up','ALPHA','3 clínicas · interno'],
+    ['dashboard_v3','Novo dashboard com gráficos avançados','GA','Todos os clientes'],
+    ['pix_parcelado','Cobrança via Pix parcelado','OFF','Desativado'],
+  ].map(([k,d,s,a]) => `
+    <div class="flex justify-between items-center border-t py-3">
+      <div>
+        <div class="font-mono text-sm">${k}</div>
+        <div class="text-xs text-slate-500 mt-1">${d}</div>
+        <div class="text-xs mt-1">${a}</div>
+      </div>
+      <div>
+        <span class="text-xs font-bold rounded px-2 py-1 ${s==='GA'?'bg-green-100 text-green-800':s==='BETA'?'bg-amber-100 text-amber-800':s==='ALPHA'?'bg-blue-100 text-blue-800':'bg-slate-200 text-slate-700'}">${s}</span>
+        <button class="ml-2 text-xs text-primary">Configurar →</button>
+      </div>
+    </div>`).join('')}
+</section>
+`);
+
+// ========== INTEGRACOES ==========
+page('integracoes', `
+<header class="mb-6">
+  <h1 class="text-3xl font-bold">Integrações e API keys</h1>
+  <p class="text-slate-500">Chaves de API globais do sistema.</p>
+</header>
+<div class="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-lg mb-6 text-sm">
+  <strong>⚠️ Atenção:</strong> Chaves aqui são globais, usadas em modo fallback quando o cliente não conectou a própria conta. Por segurança, mostre apenas últimos 4 caracteres.
+</div>
+<section class="bg-white rounded-xl border p-6">
+  ${[
+    ['Meta Graph API v19','Token global de fallback','EAA...Xk4d','CONECTADO','text-green-700'],
+    ['Google Ads API','Developer token','dev-...a92','CONECTADO','text-green-700'],
+    ['WhatsApp Cloud API','Phone number ID + Token','+55 11 ... 9824','CONECTADO','text-green-700'],
+    ['Google Business Profile','Service account','service@...iam','CONECTADO','text-green-700'],
+    ['Anthropic (IA)','API key global','sk-ant-...9f2','CONECTADO','text-green-700'],
+    ['Stripe (cobrança)','Chave pública + secret','pk_...a4f','CONECTADO','text-green-700'],
+    ['SendGrid (email)','API key','SG....b22','CONECTADO','text-green-700'],
+  ].map(([s,d,k,st,col]) => `
+    <div class="flex justify-between items-center border-t py-3">
+      <div>
+        <div class="font-semibold text-sm">${s}</div>
+        <div class="text-xs text-slate-500">${d} · <span class="font-mono">${k}</span></div>
+      </div>
+      <div>
+        <span class="text-xs font-semibold ${col}">● ${st}</span>
+        <button class="ml-3 text-xs text-primary">Atualizar</button>
+      </div>
+    </div>`).join('')}
+</section>
+`);
+
+show('overview');
+</script>
+</body>
+</html>

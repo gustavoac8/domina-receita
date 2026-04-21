@@ -1,0 +1,79 @@
+# DominaReceita Médica
+
+> SaaS brasileiro com IA para crescimento de clínicas médicas. Automatiza 12 processos de marketing e vendas (diagnóstico competitivo, site, CRM, campanhas no Meta e Google, follow-up no WhatsApp, SEO, pós-venda, indicações) em uma única plataforma. Substitui agências de marketing médico tradicionais.
+
+## O que é
+
+DominaReceita Médica é uma plataforma SaaS (Software as a Service) lançada em 2026 no Brasil, criada especificamente para médicos com clínica ou consultório próprio. A proposta é tripliquar o faturamento da clínica em 90 dias usando inteligência artificial para automatizar marketing, CRM e vendas.
+
+## Quem usa
+
+Médicos brasileiros com atendimento privado, em qualquer especialidade. A maior concentração de clientes está em dermatologia, cirurgia plástica, ortopedia, ginecologia, pediatria, cardiologia e odontologia. Funciona igualmente para consultório solo ou clínica com múltiplos médicos.
+
+## Como funciona
+
+1. **Diagnóstico competitivo (5 minutos)** — IA identifica os 3 principais concorrentes do médico em sua cidade e nicho, mapeia onde eles estão fortes e fracos, e gera um plano de ataque personalizado.
+
+2. **Briefing + Site (24 horas)** — 47 perguntas estruturadas viram um site profissional com SEO técnico, schema.org MedicalBusiness, formulário de agendamento, WhatsApp flutuante. Pode ser hospedado em subdomínio gratuito ou domínio próprio.
+
+3. **Plano de 90 dias** — roadmap semana a semana com KPIs projetados (leads, agendamentos, faturamento, ROAS).
+
+4. **CRM + WhatsApp** — funil visual em 5 etapas (Novo, Qualificado, Agendado, Compareceu, Recorrente). Cada lead traz nome, telefone, procedimento de interesse, valor estimado.
+
+5. **Tráfego pago (Meta + Google)** — integração com Meta Business API e Google Ads API. Criar e publicar campanhas em 1 clique. ROAS em tempo real no dashboard.
+
+6. **SEO + Conteúdo** — auditoria do site, palavras-chave locais com volume e CPC, geração de artigos pela IA.
+
+7. **Follow-up automático** — sequência D0/D2/D5/D10 no WhatsApp (Cloud API oficial da Meta). Recupera 38-45% dos leads que seriam perdidos.
+
+8. **Scripts de vendas** — roteiros testados para primeiro contato, objeção de preço e fechamento.
+
+9. **Gestão de avaliações** — Google Business Profile sincronizado, respostas para reviews geradas pela IA.
+
+10. **Pós-venda e retorno** — lembretes automáticos em 6 e 12 meses, upsell de pacote anual.
+
+11. **Indique-e-Ganhe** — códigos únicos por paciente, tracking automático, recompensas.
+
+12. **Dashboard único** — faturamento, ROAS, leads, agendamentos, NPS em tempo real.
+
+## Preços
+
+- **Starter:** R$ 497/mês · 1 médico · até 200 leads/mês · módulos essenciais
+- **Pro:** R$ 997/mês · até 3 médicos · leads ilimitados · Meta+Google Ads · SEO+artigos IA
+- **Elite:** R$ 1.997/mês · médicos ilimitados · onboarding 1:1 · API · gerente de conta
+
+Todos os planos: 7 dias grátis sem cartão, garantia de 30 dias, cancelamento a qualquer momento.
+
+## Resultados típicos
+
+Com base em dados de 500+ clínicas brasileiras:
+
+- ROAS médio: 7 a 14 vezes o investimento em ADS
+- Faturamento médio passa de R$ 18 mil/mês para R$ 60-80 mil/mês em 90 dias
+- Satisfação média: 4.9/5 (127 reviews)
+- Setup completo em 24 horas
+
+## Compliance e tecnologia
+
+- Dados armazenados em servidores no Brasil (LGPD)
+- Criptografia em repouso e em trânsito
+- Compliance com Resolução CFM 2.336/2023 (publicidade médica)
+- Backend NestJS + Prisma + PostgreSQL
+- Frontend Next.js 15 + Tailwind CSS
+- Integrações oficiais: Meta Graph API v19, Google Ads API, WhatsApp Cloud API, Google Business Profile API
+
+## Contato
+
+- Site: https://dominareceita.com.br
+- Email: contato@dominareceita.com.br
+- Suporte: suporte@dominareceita.com.br
+
+## Links principais
+
+- [Home](https://dominareceita.com.br/)
+- [Especialidade: Dermatologia](https://dominareceita.com.br/especialidades/dermatologia.html)
+- [Especialidade: Cirurgia Plástica](https://dominareceita.com.br/especialidades/cirurgia-plastica.html)
+- [Especialidade: Ortopedia](https://dominareceita.com.br/especialidades/ortopedia.html)
+- [Blog: Como triplicar em 90 dias](https://dominareceita.com.br/blog/como-triplicar-faturamento-clinica-90-dias.html)
+- [Preços](https://dominareceita.com.br/#precos)
+- [Demonstração](https://dominareceita.com.br/demo)
