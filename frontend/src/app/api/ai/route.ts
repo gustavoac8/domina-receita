@@ -1,29 +1,19 @@
 import { NextResponse } from "next/server";
+import { aiComplete } from "@/lib/ai-service";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    const { default: OpenAI } = await import("openai");
-    const client = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+    const { prompt, system } = await req.json();
+    if (!prompt) {
+      return NextResponse.json({ error: "prompt é obrigatório" }, { status: 400 });
+    }
 
-    const { prompt } = await req.json();
-
-    const completion = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-    });
-
-    return NextResponse.json({
-      result: completion.choices[0].message.content,
-    });
+    const result = await aiComplete(prompt, system);
+    return NextResponse.json({ result });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json(
-      { error: "Erro ao chamar OpenAI" },
-      { status: 500 }
-    );
+    console.error("AI error:", error);
+    return NextResponse.json({ error: "Erro ao chamar IA" }, { status: 500 });
   }
 }
