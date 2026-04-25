@@ -2,6 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { ClinicsService } from '../clinics/clinics.service';
+import {
+  PlacesService,
+  RealCompetitor,
+} from '../integrations/google/places.service';
 import { CreateDiagnosticoDto } from './dto/diagnostico.dto';
 
 /**
@@ -19,6 +23,7 @@ export class DiagnosticoService {
     private readonly prisma: PrismaService,
     private readonly ai: AiService,
     private readonly clinics: ClinicsService,
+    private readonly places: PlacesService,
   ) {}
 
   async create(userId: string, dto: CreateDiagnosticoDto) {
@@ -58,66 +63,185 @@ export class DiagnosticoService {
 
   // ---------- IA ----------
   private async runAnalysis(dto: CreateDiagnosticoDto) {
-    const prompt = this.buildPrompt(dto);
+    // 1. Busca concorrentes REAIS via Google Places (ground truth)
+    const realCompetitors = await this.places.findCompetitors(
+      dto.specialty,
+      dto.city,
+      dto.district,
+      10,
+    );
+
+    // 2. Monta prompt com lista real (Claude analisa em vez de inventar)
+    const prompt = this.buildPrompt(dto, realCompetitors);
     const system =
-      'Você é um consultor sênior de marketing médico. ' +
-      'Analise o mercado de especialidade médica pedido e retorne um JSON ' +
-      'com { competitors[], weaknesses[], attackPlan, score(0-100), summary }.';
+      'You are a senior medical marketing consultant. ' +
+      'Output ONLY a single valid JSON object — no prose, no code fences, no commentary. ' +
+      'Use EXACTLY these English keys: competitors, weaknesses, attackPlan, score, summary. ' +
+      'The response will be parsed by a strict JSON parser.';
 
     const raw = await this.ai.complete(prompt, system);
+
+    // Log para debug em produção (não loga conteúdo sensível, apenas tamanho e prefixo)
+    // eslint-disable-next-line no-console
+    console.log(
+      `[Diagnostico] AI raw response length=${raw?.length ?? 0}, head=${(raw ?? '').slice(0, 300).replace(/\n/g, ' ')}, tail=${(raw ?? '').slice(-200).replace(/\n/g, ' ')}`,
+    );
 
     // Tenta extrair JSON da resposta. Se falhar, usa o heurístico.
     const parsed = this.safeParseJson(raw);
     if (parsed && this.looksLikeAnalysis(parsed)) {
+      // eslint-disable-next-line no-console
+      console.log(`[Diagnostico] AI response parsed OK, using AI analysis`);
       return this.normalize(parsed);
     }
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[Diagnostico] AI response NOT parseable as expected schema, falling back to heuristic. parsed=${!!parsed}`,
+    );
     return this.heuristicAnalysis(dto);
   }
 
-  private buildPrompt(dto: CreateDiagnosticoDto) {
+  private buildPrompt(
+    dto: CreateDiagnosticoDto,
+    realCompetitors: RealCompetitor[] = [],
+  ) {
     const { specialty, city, district } = dto;
-    return [
-      `Especialidade: ${specialty}`,
-      `Cidade: ${city}`,
-      district ? `Bairro: ${district}` : '',
-      '',
-      'Analise os top 10 concorrentes prováveis neste mercado.',
-      'Para cada concorrente: nome fictício plausível, site/IG hipotéticos, posicionamento, preço aparente, força de SEO (baixa/média/alta), anúncios ativos estimados (meta/google).',
-      'Liste 5 fraquezas exploráveis do mercado.',
-      'Monte plano de ataque em 4 pilares (SEO, Tráfego Pago, Conteúdo, Prova Social) com ações concretas de 90 dias.',
-      'Atribua score 0-100 de oportunidade (100 = muito fácil dominar).',
-      'Retorne SOMENTE JSON válido com as chaves: competitors, weaknesses, attackPlan, score, summary.',
-    ]
-      .filter(Boolean)
-      .join('\n');
+    const location = district ? `${city} (${district})` : city;
+
+    // Bloco com concorrentes REAIS encontrados via Google Places (ground truth).
+    // Quando não houver dados (API key não configurada ou zero resultados), o
+    // Claude faz fallback inventando, mas com aviso claro no prompt.
+    const realCompetitorsBlock =
+      realCompetitors.length > 0
+        ? `CONCORRENTES REAIS encontrados via Google Places na localidade (USE ESTES nomes; NÃO invente):
+${realCompetitors
+  .map(
+    (c, i) =>
+      `${i + 1}. "${c.name}"${c.rating ? ` — rating ${c.rating} (${c.reviewCount ?? 0} reviews)` : ''}${
+        c.website ? ` — site: ${c.website}` : ''
+      }${c.phone ? ` — tel: ${c.phone}` : ''}${
+        c.address ? ` — ${c.address}` : ''
+      }`,
+  )
+  .join('\n')}
+
+Use EXATAMENTE esses nomes no campo "name" de cada competitor. Mantenha o site real quando existir. Para os outros campos (positioning, seoStrength, estimatedAds*, averagePrice), use o seu julgamento baseado em rating, número de reviews e site (se tiver website forte e muitos reviews → premium/alta; se não tem site → popular/baixa).`
+        : `AVISO: Não foi possível buscar concorrentes reais via Google Places (API indisponível ou zero resultados). Invente 10 nomes fictícios plausíveis para a localidade.`;
+
+    return `Analise o mercado de "${specialty}" em ${location}.
+
+${realCompetitorsBlock}
+
+Você DEVE retornar APENAS um objeto JSON válido (sem markdown, sem prosa antes ou depois).
+Use EXATAMENTE este formato (chaves em INGLÊS):
+
+{
+  "competitors": [
+    {
+      "rank": 1,
+      "name": "Nome do concorrente (use os nomes REAIS da lista acima quando houver)",
+      "site": "https://site-real-ou-vazio.com.br",
+      "instagram": "@perfil_estimado",
+      "positioning": "premium" ou "intermediário" ou "popular",
+      "seoStrength": "alta" ou "média" ou "baixa",
+      "estimatedAdsMeta": 5,
+      "estimatedAdsGoogle": 3,
+      "averagePrice": 500,
+      "rating": 4.7,
+      "reviewCount": 120
+    }
+  ],
+  "weaknesses": ["fraqueza 1", "fraqueza 2", "fraqueza 3", "fraqueza 4", "fraqueza 5"],
+  "attackPlan": {
+    "seo": ["ação 1", "ação 2"],
+    "trafegoPago": ["ação 1", "ação 2"],
+    "conteudo": ["ação 1", "ação 2"],
+    "provaSocial": ["ação 1", "ação 2"]
+  },
+  "score": 75,
+  "summary": "Resumo executivo de 2-3 frases sobre o mercado e a oportunidade."
+}
+
+Regras:
+- Liste exatamente ${realCompetitors.length > 0 ? Math.min(realCompetitors.length, 10) : 10} concorrentes em "competitors" (rank por relevância: 1 = principal).
+- Liste exatamente 5 fraquezas em "weaknesses".
+- Cada pilar do "attackPlan" deve ter 2-3 ações concretas de 90 dias.
+- "score" é número inteiro 0-100 (100 = muito fácil dominar).
+- "summary" tem no máximo 600 caracteres.
+- Inclua "rating" e "reviewCount" quando os dados reais estiverem disponíveis.
+- Use português nas strings de conteúdo, mas mantenha os NOMES DAS CHAVES em inglês exatamente como acima.
+- Não inclua texto fora do JSON. Não use \`\`\`json. Apenas o objeto JSON.`;
   }
 
   private safeParseJson(raw: string): any | null {
     if (!raw) return null;
-    // Acha o primeiro { e o último } para isolar o JSON.
-    const start = raw.indexOf('{');
-    const end = raw.lastIndexOf('}');
-    if (start < 0 || end < 0) return null;
+    // Remove markdown code fences (```json ... ``` ou ``` ... ```), inclusive em qualquer posição.
+    let cleaned = raw.trim();
+    cleaned = cleaned.replace(/```(?:json)?/gi, '');
+    cleaned = cleaned.trim();
+
+    // Procura o primeiro `{` e usa bracket-counting para achar seu `}` correspondente.
+    // Isso é mais robusto que lastIndexOf('}'), pois ignora `}` em comentários após o JSON.
+    const start = cleaned.indexOf('{');
+    if (start < 0) return null;
+
+    let depth = 0;
+    let end = -1;
+    let inString = false;
+    let escape = false;
+    for (let i = start; i < cleaned.length; i++) {
+      const ch = cleaned[i];
+      if (escape) { escape = false; continue; }
+      if (ch === '\\') { escape = true; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === '{') depth++;
+      else if (ch === '}') {
+        depth--;
+        if (depth === 0) { end = i; break; }
+      }
+    }
+    if (end < 0) {
+      // Fallback: tenta com lastIndexOf
+      end = cleaned.lastIndexOf('}');
+      if (end < 0) return null;
+    }
+
+    const candidate = cleaned.slice(start, end + 1);
     try {
-      return JSON.parse(raw.slice(start, end + 1));
-    } catch {
+      return JSON.parse(candidate);
+    } catch (err: any) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[Diagnostico] JSON.parse failed: ${err?.message?.slice(0, 200)}. candidate_length=${candidate.length}, candidate_head=${candidate.slice(0, 200).replace(/\n/g, ' ')}, candidate_tail=${candidate.slice(-200).replace(/\n/g, ' ')}`,
+      );
       return null;
     }
   }
 
   private looksLikeAnalysis(p: any) {
-    return (
-      p && Array.isArray(p.competitors) && typeof p.score === 'number'
-    );
+    if (!p) return false;
+    // Aceita chaves em inglês (esperado) OU português (caso o modelo traduza).
+    const competitors = p.competitors ?? p.concorrentes;
+    const score = p.score ?? p.pontuacao ?? p.pontuação;
+    const scoreNum = typeof score === 'string' ? Number(score) : score;
+    return Array.isArray(competitors) && typeof scoreNum === 'number' && !isNaN(scoreNum);
   }
 
   private normalize(p: any) {
+    // Aceita chaves em inglês ou português; normaliza para inglês.
+    const competitors = p.competitors ?? p.concorrentes ?? [];
+    const weaknesses = p.weaknesses ?? p.fraquezas ?? [];
+    const attackPlan = p.attackPlan ?? p.planoDeAtaque ?? p.plano_de_ataque ?? {};
+    const rawScore = p.score ?? p.pontuacao ?? p.pontuação ?? 50;
+    const scoreNum = typeof rawScore === 'string' ? Number(rawScore) : rawScore;
+    const summary = p.summary ?? p.resumo ?? '';
     return {
-      competitors: p.competitors ?? [],
-      weaknesses: p.weaknesses ?? [],
-      attackPlan: p.attackPlan ?? {},
-      score: Math.max(0, Math.min(100, Math.round(p.score ?? 50))),
-      summary: (p.summary ?? '').toString().slice(0, 4000),
+      competitors,
+      weaknesses,
+      attackPlan,
+      score: Math.max(0, Math.min(100, Math.round(scoreNum || 50))),
+      summary: (summary ?? '').toString().slice(0, 4000),
     };
   }
 

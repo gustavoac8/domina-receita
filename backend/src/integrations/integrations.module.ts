@@ -4,6 +4,7 @@ import { MetaController } from './meta/meta.controller';
 import { GoogleAdsService } from './google/google-ads.service';
 import { GoogleBusinessService } from './google/google-business.service';
 import { GoogleController } from './google/google.controller';
+import { PlacesService } from './google/places.service';
 import { WhatsappService } from './whatsapp/whatsapp.service';
 import { WhatsappController } from './whatsapp/whatsapp.controller';
 
@@ -14,12 +15,14 @@ import { WhatsappController } from './whatsapp/whatsapp.controller';
     MetaService,
     GoogleAdsService,
     GoogleBusinessService,
+    PlacesService,
     WhatsappService,
   ],
   exports: [
     MetaService,
     GoogleAdsService,
     GoogleBusinessService,
+    PlacesService,
     WhatsappService,
   ],
 })
